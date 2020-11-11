@@ -6,41 +6,42 @@ ldd_path = '/usr/bin/ldd'
 not_found = 'not found'
 link_to_lib = '=>'
 libs_collected = 'clibs/'
-
+libs = set()
 
 def parse_lib(lib_file):
-    print('\r\nSTART PARSE FILE {}'.format(lib_file))
-    cmd = [ ldd_path, lib_file, ]
-    text = subprocess.check_output(cmd, encoding='utf8')
-    text = text.splitlines()
-    for line in text:
-        filename = get_filename(line)
-        if filename:
-            copy_lib(filename)
-            parse_lib(filename)
+    if lib_file not in libs:
+        print('\r\nStart parse file: {}'.format(lib_file))
+        cmd = [ ldd_path, lib_file, ]
+        text = subprocess.check_output(cmd, encoding='utf8')
+        text = text.splitlines()
+        for line in text:
+            filename = get_filename(line)
+            if filename:
+                libs.add(filename)
+                copy_lib(filename)
+                parse_lib(filename)
 
 
 def copy_lib(libname):
-    print('Source libname: {}'.format(libname))
+    # print('Source libname: {}'.format(libname))
     dst_name = libname
     if '/' in libname:
         dst_name = libname.split('/')[-1]
-        print('dst_name:', dst_name)
 
     result = shutil.copy(libname, libs_collected+dst_name, follow_symlinks=True)
     if result:
-        print('Copied filename: {}'.format(result))
+        print('Copied filename: {}\r\n'.format(result))
     else:
-        print('Filename {} not copied!!!'.format(libname))
+        print('Filename {} not copied!!!\r\n'.format(libname))
 
 
 def get_filename(line):
     math = re.search(not_found, line)
+    split_line = line.split(' ')
     if math:
-        print('Lib {} not found...'.format(line))
+        print('Lib {} not found...\r\n'.format(check_parm(split_line, 0)))
         return False
 
-    split_line = line.split(' ')
     second_parm = check_parm(split_line, 1)
 
     if second_parm.startswith('('):
@@ -49,8 +50,6 @@ def get_filename(line):
     third_parm = check_parm(split_line, 2)
     if third_parm:
         return third_parm
-
-    return False
 
 
 def check_parm(line, index):
